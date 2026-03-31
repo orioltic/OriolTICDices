@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lanzador de Dados Personalizado</title>
+    <style>
+        /* --- ESTILOS GENERALES --- */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a24;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            color: #d4af37; /* Dorado */
+            text-align: center;
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+        }
+
+        /* --- PANELES DE CONTROL --- */
+        .controls {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 15px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 30px;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+        }
+
+        select, button {
+            padding: 10px 20px;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        select {
+            background-color: #2a2a35;
+            color: white;
+            border: 1px solid #d4af37;
+        }
+
+        .btn-add {
+            background-color: #7b1fa2; /* Morado */
+            color: white;
+        }
+        
+        .btn-add:hover { background-color: #9c27b0; }
+
+        .btn-roll {
+            background-color: #d4af37; /* Dorado */
+            color: #1a1a24;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+            transition: transform 0.2s;
+        }
+
+        .btn-roll:hover { transform: scale(1.05); }
+
+        .total-box {
+            font-size: 1.8rem;
+            background-color: #2a2a35;
+            padding: 10px 30px;
+            border-radius: 10px;
+            border: 1px solid #7b1fa2;
+            margin-left: 20px;
+        }
+
+        /* --- CONTENEDOR DE DADOS --- */
+        #dice-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            justify-content: center;
+            max-width: 900px;
+            margin-bottom: 50px;
+        }
+
+        /* Envoltorio individual para dado y botón borrar */
+        .die-wrapper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .btn-remove {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: #ff3366;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 14px;
+            line-height: 14px;
+            padding: 0;
+            cursor: pointer;
+            z-index: 10;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+
+        /* --- DISEÑO BASE DE LOS DADOS --- */
+        .die {
+            width: 90px;
+            height: 90px;
+            /* Textura de mármol morado */
+            background: linear-gradient(135deg, #4a148c 0%, #7b1fa2 30%, #6a1b9a 50%, #8e24aa 70%, #4a148c 100%);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: transform 0.1s;
+        }
+
+        /* Números dorados */
+        .die span {
+            color: #ffca28; /* Dorado brillante */
+            font-size: 2.2rem;
+            font-weight: 900;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8), -1px -1px 0 rgba(255,255,255,0.2);
+            font-family: 'Times New Roman', serif; /* Da un toque más de rol */
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* --- FORMAS GEOMÉTRICAS (CSS Clip-Path) --- */
+        .d4 {
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+        }
+        .d4 span { transform: translateY(15px); } /* Centrar el número abajo */
+
+        .d6 {
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4), inset 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .d8 {
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+        }
+
+        .d10 {
+            clip-path: polygon(50% 0%, 100% 35%, 50% 100%, 0% 35%);
+        }
+
+        .d12 {
+            clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+        }
+
+        .d20 {
+            clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+        }
+
+        /* --- ANIMACIÓN --- */
+        @keyframes rollAnimation {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(360deg) scale(1.2); }
+            100% { transform: rotate(720deg) scale(1); }
+        }
+        .rolling {
+            animation: rollAnimation 0.6s ease-out;
+        }
+
+        /* --- FOOTER (AUTORÍA Y LICENCIA) --- */
+        footer {
+            margin-top: auto;
+            text-align: center;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.3);
+            width: 100%;
+            font-size: 0.9rem;
+            color: #bbb;
+        }
+        footer a {
+            color: #d4af37;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        footer a:hover { text-decoration: underline; }
+        .cc-img { margin: 10px 0; border-width: 0; }
+    </style>
+</head>
+<body>
+
+    <h1>Tirada de Dados Personalizada</h1>
+
+    <!-- Panel de control -->
+    <div class="controls">
+        <select id="die-type">
+            <option value="4">Dado D4</option>
+            <option value="6">Dado D6</option>
+            <option value="8">Dado D8</option>
+            <option value="10">Dado D10</option>
+            <option value="12">Dado D12</option>
+            <option value="20" selected>Dado D20</option>
+        </select>
+        <button class="btn-add" id="btn-add">Añadir Dado</button>
+        <button class="btn-roll" id="btn-roll">Lanzar Dados</button>
+        <div class="total-box">Total: <span id="total-score">0</span></div>
+    </div>
+
+    <!-- Contenedor donde se generan los dados -->
+    <div id="dice-container"></div>
+
+    <!-- Footer con autoría y CC -->
+    <footer>
+        <p>Desarrollado por <a href="https://orioltic.com" target="_blank">Oriol Borrás-Gené (@OriolTIC)</a></p>
+        <a rel="license" href="http://creativecommons.org/licenses/by/4.0/" target="_blank">
+            <img alt="Licencia Creative Commons" class="cc-img" src="https://i.creativecommons.org/l/by/4.0/88x31.png" />
+        </a>
+        <p>Esta obra está bajo una <a rel="license" href="http://creativecommons.org/licenses/by/4.0/" target="_blank">Licencia Creative Commons Atribución 4.0 Internacional</a>.</p>
+    </footer>
+
+    <script>
+        const container = document.getElementById('dice-container');
+        const btnAdd = document.getElementById('btn-add');
+        const btnRoll = document.getElementById('btn-roll');
+        const totalScoreEl = document.getElementById('total-score');
+        const selectType = document.getElementById('die-type');
+
+        // Función para calcular y mostrar el total actual
+        function calculateTotal() {
+            let total = 0;
+            const diceValues = document.querySelectorAll('.die span');
+            diceValues.forEach(span => {
+                const val = parseInt(span.innerText);
+                if (!isNaN(val)) total += val;
+            });
+            totalScoreEl.innerText = total;
+        }
+
+        // Función para crear un nuevo dado visualmente
+        function createDie(faces) {
+            const wrapper = document.createElement('div');
+            wrapper.classList.add('die-wrapper');
+
+            // Botón de eliminar dado
+            const btnRemove = document.createElement('button');
+            btnRemove.classList.add('btn-remove');
+            btnRemove.innerText = 'x';
+            btnRemove.title = "Eliminar dado";
+            btnRemove.onclick = () => {
+                wrapper.remove();
+                calculateTotal();
+            };
+
+            // El dado en sí
+            const die = document.createElement('div');
+            die.classList.add('die', `d${faces}`);
+            die.dataset.faces = faces; // Guardamos el tipo de dado (4, 6, 8, etc.)
+            
+            // El número del dado
+            const numberSpan = document.createElement('span');
+            numberSpan.innerText = '-';
+
+            die.appendChild(numberSpan);
+            wrapper.appendChild(btnRemove);
+            wrapper.appendChild(die);
+            container.appendChild(wrapper);
+        }
+
+        // Función para lanzar todos los dados en pantalla
+        function rollAll() {
+            const allDice = document.querySelectorAll('.die');
+            if (allDice.length === 0) return;
+
+            btnRoll.disabled = true;
+
+            let total = 0;
+
+            allDice.forEach(die => {
+                // Reiniciar animación
+                die.classList.remove('rolling');
+                void die.offsetWidth; 
+                die.classList.add('rolling');
+
+                const faces = parseInt(die.dataset.faces);
+                // Generar número aleatorio
+                const result = Math.floor(Math.random() * faces) + 1;
+                
+                // Actualizar número después de la mitad de la animación
+                setTimeout(() => {
+                    die.querySelector('span').innerText = result;
+                }, 300); 
+
+                total += result;
+            });
+
+            // Actualizar total cuando termine la animación
+            setTimeout(() => {
+                totalScoreEl.innerText = total;
+                btnRoll.disabled = false;
+            }, 600);
+        }
+
+        // Event Listeners
+        btnAdd.addEventListener('click', () => {
+            createDie(selectType.value);
+            totalScoreEl.innerText = '?'; // Oculta el total hasta que se tire
+        });
+
+        btnRoll.addEventListener('click', rollAll);
+
+        // Crear un D20 por defecto al cargar la página
+        createDie(20);
+    </script>
+</body>
+</html>
